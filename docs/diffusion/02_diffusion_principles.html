@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>2.1 Diffusion 原理学习文档</title>
+<script>
+window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"]]},svg:{fontCache:"global"}};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+:root{--bg:#f7f4ed;--paper:#fffdf8;--ink:#1f2933;--muted:#667085;--line:#ded4c7;--accent:#184e77;--accent2:#7b2cbf;--accent3:#bc6c25;--blue:#edf5fb;--purple:#f5f0ff;--orange:#fff7ed;--green:#eef7f2;--shadow:0 14px 36px rgba(31,41,51,.08);--radius:18px}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(180deg,#f7f1e7 0%,#fbf8f1 40%,#f7f4ed 100%);line-height:1.68}a{color:var(--accent);text-decoration:none;border-bottom:1px dotted rgba(24,78,119,.45)}.header{padding:56px 28px 36px;background:linear-gradient(135deg,rgba(255,253,248,.95),rgba(242,234,220,.85));border-bottom:1px solid var(--line)}.wrap{max-width:1220px;margin:0 auto}.kicker{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:800}h1{font-size:44px;line-height:1.12;margin:16px 0 14px;letter-spacing:-.035em}.subtitle{font-size:18px;color:#344054;max-width:980px}.meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.pill{display:inline-flex;align-items:center;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.72);font-size:13px;color:#344054}.layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:26px;max-width:1220px;margin:26px auto;padding:0 18px 60px}.toc{position:sticky;top:14px;align-self:start;background:rgba(255,253,248,.86);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}.toc h3{margin:0 0 10px;font-size:15px}.toc a{display:block;padding:6px 0;font-size:13px;color:#344054;border:0}.section{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:26px;margin-bottom:22px}.section h2{font-size:27px;margin:0 0 14px;letter-spacing:-.02em}.section h3{font-size:20px;margin:24px 0 8px}.lead{font-size:16px;color:#344054}.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:#fffaf0}.card.blue{background:var(--blue)}.card.purple{background:var(--purple)}.card.orange{background:var(--orange)}.card.green{background:var(--green)}.callout{border-left:5px solid var(--accent);background:#edf5fb;padding:14px 16px;border-radius:12px;margin:14px 0}.warning{border-left-color:var(--accent3);background:#fff7ed}.mathbox{background:#101828;color:#f8fafc;border-radius:16px;padding:18px;margin:14px 0;overflow:auto}.mathbox .mjx-container{color:#f8fafc!important}.codebox{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#1f2933;color:#f8fafc;border-radius:14px;padding:14px;overflow:auto;font-size:13px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;margin:12px 0}table{width:100%;border-collapse:collapse;background:#fffdf8;font-size:14px}th,td{padding:11px 12px;border-bottom:1px solid #ece4d8;text-align:left;vertical-align:top}th{background:#f2eadc;color:#273444}tr:last-child td{border-bottom:0}.template-block{border:1px solid var(--line);background:#fffdf8;border-radius:18px;padding:18px;margin:18px 0}.eyebrow{font-size:12px;color:var(--muted);font-weight:800;letter-spacing:.06em;text-transform:uppercase}.note-area{min-height:180px;border:1px dashed #b8a990;border-radius:16px;padding:16px;background:#fffaf0}.footer{color:var(--muted);font-size:13px;margin-top:20px}@media(max-width:930px){.layout{grid-template-columns:1fr}.toc{position:relative;top:0}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:32px}}
+</style>
+</head>
+<body>
+<header class="header"><div class="wrap"><div class="kicker">2.1 · Diffusion Principles · v0.1</div><h1>Diffusion 原理学习文档</h1><p class="subtitle">按照“知识树 → 数学公式 → 推理过程 → 代码块 example 对应”的方式，系统解释 diffusion 的核心原理：加噪、去噪、noise schedule、训练 loss、score field、采样和条件生成。</p><div class="meta-row"><span class="pill">目标：原理入门到可实现</span><span class="pill">重点：公式-代码-直觉对应</span><span class="pill">适合：后续 paper 复现 / 自动驾驶 diffusion planner</span><span class="pill">格式：单文件 HTML</span></div></div></header>
+<div class="layout"><aside class="toc"><h3>目录</h3><a href="#overview">01 文档目标</a><a href="#tree">02 Diffusion 知识树</a><a href="#intuition">03 核心直觉</a><a href="#notation">04 符号表</a><a href="#forward">05 Forward Process 加噪</a><a href="#schedule">06 Noise Schedule</a><a href="#reverse">07 Reverse Process 去噪</a><a href="#loss">08 DDPM 训练目标</a><a href="#score">09 Score Matching 视角</a><a href="#prediction">10 ε/x0/v 预测参数化</a><a href="#sampling">11 DDPM / DDIM 采样</a><a href="#condition">12 条件生成与 Guidance</a><a href="#latent">13 Latent Diffusion</a><a href="#trajectory">14 迁移到 Trajectory Diffusion</a><a href="#code">15 最小 PyTorch 代码</a><a href="#misunderstanding">16 常见误解</a><a href="#papers">17 关键 Paper 栈</a><a href="#todo">18 后续写回区</a></aside>
+<main>
+<section id="overview" class="section"><h2>01｜文档目标</h2><p class="lead">这份文档只解决 2.1：Diffusion 原理。它不是 paper deep dive，也不是自动驾驶应用全章，而是为后续 2.2 paper 整理与 2.3 自动驾驶应用提供基础。</p><div class="grid-3"><div class="card blue"><h3>学完要会</h3><p>能解释 $x_t$ 怎么来、模型预测什么、loss 惩罚什么、采样如何从噪声恢复样本。</p></div><div class="card purple"><h3>输出形式</h3><p>每个知识点都给出：一句话、数学公式、符号解释、推理过程、代码对应、常见误解。</p></div><div class="card orange"><h3>后续接口</h3><p>可继续扩展 DDPM/DDIM/CFG/LDM/DiT/Diffusion Policy/Diffusion Planner 的论文精读与代码复现。</p></div></div></section>
+<section id="tree" class="section"><h2>02｜Diffusion 知识树</h2><pre class="codebox">Diffusion Models
+├── 1. Forward Process
+│   ├── Gaussian noising
+│   ├── beta schedule
+│   ├── alpha / alpha_bar
+│   └── q(x_t | x_0)
+├── 2. Reverse Process
+│   ├── p_theta(x_{t-1} | x_t)
+│   ├── denoising network
+│   ├── noise prediction epsilon_theta
+│   └── x_0 prediction
+├── 3. Training Objective
+│   ├── ELBO
+│   ├── simplified noise prediction loss
+│   ├── score matching
+│   └── v-prediction
+├── 4. Sampling
+│   ├── DDPM sampling
+│   ├── DDIM sampling
+│   ├── fast sampling
+│   └── consistency / rectified flow
+├── 5. Conditional Generation
+│   ├── classifier guidance
+│   ├── classifier-free guidance
+│   ├── text / image / scene condition
+│   └── reward guidance
+├── 6. Architectures
+│   ├── U-Net
+│   ├── DiT / Transformer denoiser
+│   └── latent diffusion
+└── 7. Planning Applications
+    ├── Diffusion Policy
+    ├── Trajectory Diffusion
+    ├── Diffusion Planner
+    └── RL / RFT / closed-loop optimization</pre></section>
+<section id="intuition" class="section"><h2>03｜核心直觉</h2><p>Diffusion 的训练可以看成“人为破坏数据，然后训练模型学会修复”。</p><div class="callout"><b>一句话：</b>Forward process 把真实数据逐步加噪变成高斯噪声；Reverse process 学习从噪声一步步去噪回真实数据分布。</div><div class="table-wrap"><table><thead><tr><th>阶段</th><th>做什么</th><th>谁决定</th><th>学习了吗</th></tr></thead><tbody><tr><td>Forward / 加噪</td><td>$x_0 \rightarrow x_t$</td><td>固定公式和 noise schedule</td><td>不学习</td></tr><tr><td>Reverse / 去噪</td><td>$x_t \rightarrow x_{t-1}$</td><td>神经网络 $p_\theta$ / $\epsilon_\theta$</td><td>学习</td></tr><tr><td>Training</td><td>预测噪声或 clean data</td><td>MSE / ELBO / score matching</td><td>学习 denoising direction</td></tr><tr><td>Sampling</td><td>从 $x_T \sim \mathcal{N}(0,I)$ 生成 $x_0$</td><td>反向采样算法</td><td>使用训练好的模型</td></tr></tbody></table></div></section>
+<section id="notation" class="section"><h2>04｜符号表</h2><div class="table-wrap"><table><thead><tr><th>符号</th><th>含义</th><th>代码变量</th></tr></thead><tbody><tr><td>$x_0$</td><td>干净真实数据，例如图像、轨迹、action sequence</td><td><code>x0</code></td></tr><tr><td>$x_t$</td><td>第 $t$ 个噪声强度下的 noisy data</td><td><code>x_t</code></td></tr><tr><td>$\epsilon$</td><td>标准高斯噪声，$\epsilon \sim \mathcal{N}(0,I)$</td><td><code>noise</code></td></tr><tr><td>$\beta_t$</td><td>每一步加入噪声的强度</td><td><code>betas[t]</code></td></tr><tr><td>$\alpha_t$</td><td>$1-\beta_t$，每一步保留信号比例</td><td><code>alphas[t]</code></td></tr><tr><td>$\bar{\alpha}_t$</td><td>$\prod_{s=1}^{t}\alpha_s$，从 0 到 t 的累计保留比例</td><td><code>alpha_bars[t]</code></td></tr><tr><td>$\epsilon_\theta$</td><td>神经网络预测的噪声</td><td><code>model(x_t, t, cond)</code></td></tr><tr><td>$c$</td><td>条件信息，例如文本、类别、场景、地图、历史轨迹</td><td><code>cond</code></td></tr></tbody></table></div></section>
+<section id="forward" class="section template-block"><div class="eyebrow">Knowledge Point 1</div><h2>05｜Forward Process：加噪过程</h2><h3>一句话解释</h3><p>Forward process 是一个固定的马尔可夫加噪过程，把真实数据 $x_0$ 逐步变成接近标准高斯噪声的 $x_T$。</p><h3>解决什么问题</h3><p>如果我们能把任意数据逐步破坏成标准高斯噪声，那么生成时就可以反过来：从标准高斯噪声逐步恢复真实数据。</p><h3>数学公式</h3><div class="mathbox">$$q(x_t \mid x_{t-1}) = \mathcal{N}(x_t;\sqrt{1-\beta_t}x_{t-1}, \beta_t I)$$</div><p>利用高斯分布的组合性质，可以直接从 $x_0$ 采样任意时刻的 $x_t$：</p><div class="mathbox">$$q(x_t \mid x_0)=\mathcal{N}(x_t;\sqrt{\bar\alpha_t}x_0,(1-\bar\alpha_t)I)$$</div><div class="mathbox">$$x_t = \sqrt{\bar\alpha_t}x_0 + \sqrt{1-\bar\alpha_t}\epsilon,\quad \epsilon \sim \mathcal{N}(0,I)$$</div><h3>公式-代码对应</h3><pre class="codebox"># Formula:
+# x_t = sqrt(alpha_bar_t) * x_0 + sqrt(1 - alpha_bar_t) * epsilon
+
+def add_noise(x0, t, alpha_bars):
+    noise = torch.randn_like(x0)                         # epsilon ~ N(0, I)
+    sqrt_ab = alpha_bars[t].sqrt().view(-1, 1, 1)         # sqrt(alpha_bar_t)
+    sqrt_1mab = (1 - alpha_bars[t]).sqrt().view(-1, 1, 1) # sqrt(1-alpha_bar_t)
+    x_t = sqrt_ab * x0 + sqrt_1mab * noise                # noisy sample
+    return x_t, noise</pre><div class="callout warning">Forward process 不需要训练，也不是模型学出来的。它是人为规定的噪声破坏过程。</div></section>
+<section id="schedule" class="section template-block"><div class="eyebrow">Knowledge Point 2</div><h2>06｜Noise Schedule：噪声调度</h2><p>Noise schedule 决定每个 timestep 加多少噪声，也就是 $\beta_t$ 如何随 $t$ 变化。</p><div class="mathbox">$$\alpha_t = 1-\beta_t,\qquad \bar{\alpha}_t=\prod_{s=1}^{t}\alpha_s$$</div><pre class="codebox">def make_linear_schedule(num_steps, beta_start=1e-4, beta_end=0.02):
+    betas = torch.linspace(beta_start, beta_end, num_steps)
+    alphas = 1.0 - betas
+    alpha_bars = torch.cumprod(alphas, dim=0)
+    return betas, alphas, alpha_bars</pre><p>Noise schedule 不是单纯工程细节。它会影响训练难度、采样质量、不同 timestep 的信噪比和模型要学习的 denoising 任务分布。</p></section>
+<section id="reverse" class="section template-block"><div class="eyebrow">Knowledge Point 3</div><h2>07｜Reverse Process：去噪过程</h2><p>Reverse process 学习从 $x_t$ 预测 $x_{t-1}$，逐步把噪声样本恢复成真实数据。</p><div class="mathbox">$$p_\theta(x_{t-1}\mid x_t)=\mathcal{N}(x_{t-1};\mu_\theta(x_t,t),\Sigma_\theta(x_t,t))$$</div><p>Forward process 是“把清晰图像/轨迹弄脏”；Reverse process 是训练一个清洁工，每次只清理一点点噪声。</p><pre class="codebox">class TinyDenoiser(nn.Module):
+    def __init__(self, x_dim, hidden_dim=128):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(x_dim + 1, hidden_dim),
+            nn.SiLU(),
+            nn.Linear(hidden_dim, x_dim),
+        )
+
+    def forward(self, x_t, t):
+        inp = torch.cat([x_t, t], dim=-1)
+        pred_noise = self.net(inp)
+        return pred_noise</pre></section>
+<section id="loss" class="section template-block"><div class="eyebrow">Knowledge Point 4</div><h2>08｜DDPM 训练目标：预测噪声</h2><p>DDPM 常用的简化训练目标是让模型预测 forward process 中加入的噪声 $\epsilon$。</p><div class="mathbox">$$\mathcal{L}_{simple}=\mathbb{E}_{x_0,t,\epsilon}\left[\left\|\epsilon-\epsilon_\theta(x_t,t)\right\|_2^2\right]$$</div><p>如果模型能准确预测 $x_t$ 里有多少噪声，就可以把这些噪声从 $x_t$ 中扣掉，从而估计 clean data 或上一步 $x_{t-1}$。</p><pre class="codebox">x_t, noise = add_noise(x0, t, alpha_bars)      # create noisy sample
+pred_noise = model(x_t, t_embed)               # epsilon_theta(x_t, t)
+loss = F.mse_loss(pred_noise, noise)           # noise prediction loss</pre></section>
+<section id="score" class="section template-block"><div class="eyebrow">Knowledge Point 5</div><h2>09｜Score Matching 视角</h2><p>Score 是 log-density 对输入的梯度，表示“当前样本往哪里移动，概率密度会上升最快”。</p><div class="mathbox">$$s_t(x_t)=\nabla_{x_t}\log p_t(x_t)$$</div><p>把数据分布想象成地形。高概率区域是山峰，低概率区域是山谷。Score 就是当前位置的上坡方向。去噪过程就是沿着更高概率的数据区域移动。</p><div class="mathbox">$$s_\theta(x_t,t)\approx -\frac{\epsilon_\theta(x_t,t)}{\sqrt{1-\bar\alpha_t}}$$</div><pre class="codebox">pred_noise = model(x_t, t_embed)
+sqrt_1mab = (1 - alpha_bars[t]).sqrt().view(-1, 1)
+score = -pred_noise / sqrt_1mab</pre><div class="callout warning">Score 不是一个分类分数，也不是 reward。它是数据分布的 log-density 梯度。</div></section>
+<section id="prediction" class="section"><h2>10｜ε / x0 / v 预测参数化</h2><div class="table-wrap"><table><thead><tr><th>参数化</th><th>模型预测什么</th><th>优点</th><th>代码变量</th></tr></thead><tbody><tr><td>$\epsilon$-prediction</td><td>预测加入的噪声</td><td>DDPM 常见形式，稳定、直观</td><td><code>pred_noise</code></td></tr><tr><td>$x_0$-prediction</td><td>预测 clean data</td><td>直观，可直接得到去噪样本</td><td><code>pred_x0</code></td></tr><tr><td>$v$-prediction</td><td>预测 signal 和 noise 的组合变量</td><td>常用于改进不同 SNR 下的训练稳定性</td><td><code>pred_v</code></td></tr></tbody></table></div><div class="mathbox">$$\hat{x}_0=\frac{x_t-\sqrt{1-\bar\alpha_t}\epsilon_\theta(x_t,t)}{\sqrt{\bar\alpha_t}}$$</div><pre class="codebox">def predict_x0_from_noise(x_t, t, pred_noise, alpha_bars):
+    sqrt_ab = alpha_bars[t].sqrt().view(-1, 1, 1)
+    sqrt_1mab = (1 - alpha_bars[t]).sqrt().view(-1, 1, 1)
+    pred_x0 = (x_t - sqrt_1mab * pred_noise) / sqrt_ab
+    return pred_x0</pre></section>
+<section id="sampling" class="section template-block"><div class="eyebrow">Knowledge Point 6</div><h2>11｜Sampling：从噪声生成数据</h2><p>Sampling 是从 $x_T \sim \mathcal{N}(0,I)$ 出发，反复调用 denoiser，逐步得到 $x_0$。</p><pre class="codebox">@torch.no_grad()
+def ddpm_sample(model, shape, alpha_bars, num_steps):
+    x = torch.randn(shape)  # x_T ~ N(0, I)
+    for t in reversed(range(num_steps)):
+        t_tensor = torch.full((shape[0],), t, dtype=torch.long)
+        pred_noise = model(x, t_tensor)
+        pred_x0 = predict_x0_from_noise(x, t_tensor, pred_noise, alpha_bars)
+        x = one_step_denoise(x, pred_noise, t_tensor)  # conceptual placeholder
+    return x</pre><div class="callout warning">上面的采样代码是教学骨架，不是完整论文复现。完整实现需要 posterior mean/variance 或 DDIM update 公式。</div></section>
+<section id="condition" class="section"><h2>12｜条件生成与 Guidance</h2><p class="lead">无条件 diffusion 学习 $p(x)$；条件 diffusion 学习 $p(x|c)$。条件 $c$ 可以是类别、文本、图像、轨迹历史、地图、场景 token 或 reward。</p><div class="mathbox">$$\epsilon_\theta(x_t,t,c)$$</div><pre class="codebox">pred_noise = model(x_t, t, cond)  # cond may be text, class, map, scene tokens, etc.</pre><h3>Classifier-Free Guidance 直觉</h3><p>训练时随机丢掉 condition，让模型同时学会 conditional 和 unconditional denoising。推理时放大两者差异，让生成结果更贴合 condition。</p><div class="mathbox">$$\epsilon_{cfg} = \epsilon_\theta(x_t,t,\varnothing) + w\left(\epsilon_\theta(x_t,t,c)-\epsilon_\theta(x_t,t,\varnothing)\right)$$</div><pre class="codebox">eps_uncond = model(x_t, t, cond=None)
+eps_cond = model(x_t, t, cond=cond)
+eps_cfg = eps_uncond + guidance_scale * (eps_cond - eps_uncond)</pre></section>
+<section id="latent" class="section"><h2>13｜Latent Diffusion</h2><p>Latent Diffusion 不在原始数据空间里扩散，而是在 autoencoder 的 latent space 里扩散，从而降低计算成本。</p><div class="mathbox">$$z_0 = E(x_0), \quad z_t = \sqrt{\bar\alpha_t}z_0 + \sqrt{1-\bar\alpha_t}\epsilon$$</div><pre class="codebox">z0 = encoder(x0)
+z_t, noise = add_noise(z0, t, alpha_bars)
+pred_noise = denoiser(z_t, t, cond)
+loss = F.mse_loss(pred_noise, noise)</pre><p>在自动驾驶中，类似思想可以迁移为：不直接在 raw sensor 或 full trajectory 空间扩散，而是在 compact scene latent / trajectory latent 中扩散。</p></section>
+<section id="trajectory" class="section"><h2>14｜迁移到 Trajectory Diffusion</h2><p class="lead">把 diffusion 从图像迁移到轨迹时，核心变量 $x_0$ 不再是图像，而是 future trajectory 或 action sequence。</p><div class="mathbox">$$x_0 = Y = [(x_1,y_1),(x_2,y_2),...,(x_T,y_T)]$$</div><div class="mathbox">$$x_t = \sqrt{\bar\alpha_t}Y + \sqrt{1-\bar\alpha_t}\epsilon$$</div><div class="grid-2"><div class="card blue"><h3>图像 diffusion</h3><p>$x_0$ 是像素矩阵；condition 可以是 text prompt；输出质量看视觉质量。</p></div><div class="card green"><h3>轨迹 diffusion</h3><p>$x_0$ 是未来轨迹；condition 是场景、地图、历史运动；输出质量看安全、舒适、规则、闭环表现。</p></div></div><div class="callout">这为 2.3 自动驾驶应用章节打基础：Diffusion Planner 本质上就是 scene-conditioned trajectory denoising。</div></section>
+<section id="code" class="section"><h2>15｜最小 PyTorch 代码骨架</h2><pre class="codebox">import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+def make_schedule(num_steps=1000, beta_start=1e-4, beta_end=0.02):
+    betas = torch.linspace(beta_start, beta_end, num_steps)
+    alphas = 1.0 - betas
+    alpha_bars = torch.cumprod(alphas, dim=0)
+    return betas, alphas, alpha_bars
+
+def extract(a, t, x_shape):
+    out = a.gather(0, t).float()
+    return out.view(t.shape[0], *([1] * (len(x_shape) - 1)))
+
+def add_noise(x0, t, alpha_bars):
+    noise = torch.randn_like(x0)
+    sqrt_ab = extract(alpha_bars.sqrt(), t, x0.shape)
+    sqrt_1mab = extract((1 - alpha_bars).sqrt(), t, x0.shape)
+    x_t = sqrt_ab * x0 + sqrt_1mab * noise
+    return x_t, noise
+
+class MLPDenoiser(nn.Module):
+    def __init__(self, x_dim, hidden=256):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(x_dim + 1, hidden), nn.SiLU(),
+            nn.Linear(hidden, hidden), nn.SiLU(),
+            nn.Linear(hidden, x_dim),
+        )
+    def forward(self, x_t, t):
+        t = t.float().unsqueeze(-1) / 1000.0
+        inp = torch.cat([x_t, t], dim=-1)
+        return self.net(inp)
+
+B, x_dim, num_steps = 32, 2, 1000
+betas, alphas, alpha_bars = make_schedule(num_steps)
+model = MLPDenoiser(x_dim)
+x0 = torch.randn(B, x_dim)
+t = torch.randint(0, num_steps, (B,))
+x_t, noise = add_noise(x0, t, alpha_bars)
+pred_noise = model(x_t, t)
+loss = F.mse_loss(pred_noise, noise)
+loss.backward()</pre></section>
+<section id="misunderstanding" class="section"><h2>16｜常见误解</h2><div class="grid-2"><div class="card orange"><h3>误解 1：Forward process 是模型学出来的</h3><p>不是。Forward process 是固定加噪公式，模型学的是 reverse process。</p></div><div class="card orange"><h3>误解 2：Diffusion 只能生成图片</h3><p>不是。只要数据可以表示为向量、序列或 latent，就可以建模，例如 action sequence 和 trajectory。</p></div><div class="card orange"><h3>误解 3：Loss 只是普通 MSE，没有特殊意义</h3><p>虽然形式是 MSE，但预测噪声等价于学习去噪方向，与 score matching 有联系。</p></div><div class="card orange"><h3>误解 4：采样步数越多一定越好</h3><p>更多步通常更慢，质量也受 schedule、模型、任务和 guidance 影响。实际工程需要质量-速度权衡。</p></div></div></section>
+<section id="papers" class="section"><h2>17｜关键 Paper 栈</h2><div class="table-wrap"><table><thead><tr><th>论文</th><th>角色</th><th>本章对应知识点</th><th>建议阅读顺序</th></tr></thead><tbody><tr><td>DDPM</td><td>扩散模型基础</td><td>Forward / Reverse / simplified loss</td><td>1</td></tr><tr><td>Improved DDPM</td><td>训练与采样改进</td><td>variance learning / schedule / likelihood</td><td>2</td></tr><tr><td>DDIM</td><td>快速/确定性采样</td><td>sampling acceleration</td><td>3</td></tr><tr><td>Score-Based Generative Modeling</td><td>score/SDE 视角</td><td>score field / continuous-time diffusion</td><td>4</td></tr><tr><td>Classifier-Free Guidance</td><td>条件生成</td><td>conditional/unconditional denoising</td><td>5</td></tr><tr><td>Latent Diffusion</td><td>高效 latent space 生成</td><td>latent noising / conditional generation</td><td>6</td></tr><tr><td>Diffusion Policy</td><td>action diffusion</td><td>trajectory/action sequence diffusion</td><td>7</td></tr></tbody></table></div><p class="footer">注：本页只列 paper 栈和知识点对应；详细 paper deep dive 应放入 2.2 文档。</p></section>
+<section id="todo" class="section"><h2>18｜后续写回区</h2><div class="note-area" contenteditable="true"><p><b>v0.1 待扩展：</b></p><ul><li>补充 DDPM 的 ELBO 更完整推导。</li><li>补充 DDIM 的完整 update 公式与代码。</li><li>补充 Classifier Guidance 与 CFG 的差异。</li><li>补充 v-prediction 的推导和使用场景。</li><li>可将本页进一步拆分成 <code>docs/diffusion/02_diffusion_principles.md</code> 与 <code>docs/diffusion/03_math_to_code_examples.md</code>。</li></ul></div></section>
+</main></div>
+</body></html>
