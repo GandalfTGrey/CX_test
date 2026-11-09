@@ -1,0 +1,6 @@
+# Python 3.8.18. Existing Streamlit 1.39.0 is supported as well.
+streamlit==1.40.1
+streamlit-aggrid==1.0.5
+pandas==2.0.3
+numpy==1.24.4
+plotly==5.24.1
