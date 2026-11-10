@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-10",
+  "environment": {
+    "python": "3.8.18",
+    "streamlit": "1.40.1",
+    "streamlit-aggrid": "1.0.5",
+    "pandas": "2.0.3",
+    "numpy": "1.21.6"
+  },
+  "automated_tests": {"passed": 64, "failed": 0},
+  "scale_fixture": {
+    "checkpoint_directories": 10010,
+    "matching_json_files": 3001,
+    "total_json_bytes": 195065000,
+    "normal_page_records": 50,
+    "real_temporary_files": true
+  },
+  "scope": "Synthetic correctness and interaction checks; no production NFS timing claim."
+}
